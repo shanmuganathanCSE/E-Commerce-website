@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>E-Commerce</title>
+  <link rel="icon" href="https://marketplace.canva.com/EAGQ1aYlOWs/1/0/1600w/canva-blue-colorful-illustrative-e-commerce-online-shop-logo-bHiX_0QpJxE.jpg">
+  <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background: #C1CEFE; }
+
+    header {
+      background: #222;
+      color: #fff;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cart-icon, .auth-buttons button {
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+
+    .auth-buttons { 
+      padding: 10px 30px; 
+      text-align: right;
+     }
+    .auth-buttons button { 
+      padding: 8px 14px; 
+    }
+
+    .search-bar, .sort-options {
+      padding: 10px 30px;
+      text-align: right;
+    }
+
+    .search-bar input, .sort-options select {
+      padding: 8px;
+      width: 250px;
+    }
+
+    main { 
+      display: flex; 
+      padding: 20px; 
+    }
+
+    aside {
+       width: 200px;
+       }
+    aside button {
+      display: block;
+      margin: 10px 0;
+      width: 100%;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    #product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin-left: 20px;
+      flex: 1;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .card img {
+      max-width: 100%;
+      height: 150px;
+      object-fit: contain;
+    }
+
+    .card button {
+      background: #758ECD;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    .modal {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 20px;
+      width: 300px;
+      display: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+
+    .modal input {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+    }
+
+    .modal button {
+      width: 100%;
+      padding: 10px;
+      background: #758ECD;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      main { flex-direction: column; }
+      aside { width: 100%; margin-bottom: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SN Store</h1>
+    <div class="cart-icon" onclick="toggleCart()">🛒 <span id="cart-count">0</span></div>
+  </header>
+
+  <div class="auth-buttons">
+    <button onclick="showAuthForm('login')">Login</button>
+    <button onclick="showAuthForm('register')">Register</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search products..." oninput="searchProducts()" />
+  </div>
+
+  <div class="sort-options">
+    <label>Sort by:</label>
+    <select onchange="sortProducts(this.value)">
+      <option value="default">Default</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+      <option value="name-asc">Name: A-Z</option>
+      <option value="name-desc">Name: Z-A</option>
+    </select>
+  </div>
+
+  <main>
+    <aside>
+      <h3>Filter by Category</h3>
+      <button onclick="filterCategory('all')">All</button>
+      <button onclick="filterCategory('electronics')">Electronics</button>
+      <button onclick="filterCategory('clothing')">Clothing</button>
+      <button onclick="filterCategory('books')">Books</button>
+      <button onclick="filterCategory('home')">Home</button>
+      <button onclick="filterCategory('sports')">Sports</button>
+      <button onclick="filterCategory('Jewellers')">Jewellers</button>
+    </aside>
+
+    <section id="product-list"></section>
+  </main>
+
+  <div id="cart-modal" class="modal">
+    <h2>Your Cart</h2>
+    <div id="cart-items"></div>
+    <p id="cart-total"></p>
+    <button onclick="clearCart()">Clear Cart</button>
+    <button onclick="checkout()">Checkout</button>
+  </div>
+
+  <div id="auth-modal" class="modal">
+    <h2 id="auth-title">Login</h2>
+    <input type="text" id="auth-username" placeholder="Username" />
+    <input type="password" id="auth-password" placeholder="Password" />
+    <button onclick="submitAuth()">Submit</button>
+    <p id="toggle-auth" onclick="toggleAuth()" style="cursor:pointer;color:blue;text-align:center;">Don't have an account? Register</p>
+  </div>
+
+  <div id="payment-modal" class="modal">
+    <h2>Payment Details</h2>
+    <input type="text" id="card-name" placeholder="Name on Card" />
+    <input type="text" id="card-number" placeholder="Card Number" />
+    <input type="text" id="card-expiry" placeholder="MM/YY" />
+    <input type="text" id="card-cvv" placeholder="CVV" />
+    <button onclick="submitPayment()">Pay Now</button>
+  </div>
+
+  <script>
+    const products = [
+      { id: 1, title: "Smartphone", price: 59999, category: "electronics", image: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/refurb-iphone-15-black-202412_AV1?wid=1144&hei=1144&fmt=jpeg&qlt=90&.v=dkRYUzNIZktUUlpiYVJibmhmNTFOVzMxT08ySi9TMEFIcTAvVU84TlE3Mi9kc2VkZk5sZFd2WGM2RVZFVkhsSnV2eTQ1SkZlZU9lQ1FZSE9SaVJ1T1B4Y3hWL0xBQzgyemFoamQzdEtRY0NGMzNlZ2VZR2QydGZlZDRJYlN3V2I" },
+      { id: 2, title: "T-Shirt", price: 599, category: "clothing", image: "https://5.imimg.com/data5/LM/FE/MY-39044320/mens-denim-t-shirt.jpg" },
+      { id: 3, title: "Apple Airpods", price: 12299, category: "electronics", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbrj5FnS9NSh2TJss_DhwcvbWW8drw_vPH1SHAH2m5AJSbY4rIKqZIoQmnklMZ_lqL2Io&usqp=CAU" },
+      { id: 4, title: "Novel Book", price: 369, category: "books", image: "https://store.whitefalconpublishing.com/cdn/shop/files/TheEnglish_CoverHB_F_large.jpg?v=1718624085" },
+      { id: 5, title: "Jeans", price: 45, category: "clothing", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRwQaB4_sCGQIxlD63EppVNCnL9NCdMlujHQ&s" },
+      { id: 6, title: "Smartwatch", price: 1199, category: "electronics", image: "https://www.gonoise.com/cdn/shop/files/1_c95e5561-4f66-413d-b143-42d31821e554.webp?v=1721392308" },
+      { id: 7, title: "Jacket", price: 1989, category: "clothing", image: "https://www.voganow.com/cdn/shop/files/BBGJ-1108-014_2_copy.jpg?v=1740144445" },
+      { id: 8, title: "Cookbook", price: 1129, category: "books", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQlYhv_2UNmD3Z2-TQbVSlpvmudjD11L2xpPw&s" },
+      { id: 9, title: "Lamp", price: 135, category: "home", image: "https://m.media-amazon.com/images/I/61Ckk6bdzwL.jpg" },
+      { id: 10, title: "Cricket Bat", price: 77799, category: "sports", image: "https://dkpcricketonline.com/cdn/shop/collections/image.heic?v=1744392198" },
+      { id: 11, title: "Speaker", price: 4549, category: "electronics", image: "https://images-cdn.ubuy.co.in/65a3f902b22d436c02334a0d-njsj-computer-speakers-with-subwoofer.jpg" },
+      { id: 12, title: "Lungi", price: 1059, category: "clothing", image: "https://m.media-amazon.com/images/I/61m6mdz32PL._UY1100_.jpg" },
+      { id: 13, title: "Notebook", price: 99, category: "books", image: "https://m.media-amazon.com/images/I/718vM+75UNL._UF1000,1000_QL80_.jpg" },
+      { id: 14, title: "Curtains", price: 599, category: "home", image: "https://decowindow.in/media/catalog/product/cache/9c5c0f05f03be2a2bfe530411f6cf51a/0/0/0065394-0020_1a_.jpg" },
+      { id: 15, title: "Basketball", price: 399, category: "sports", image: "https://static.nbastore.in/resized/500X500/492/wilson-nba-drv-outdoor-basketball-size-7-brown-brown-664ee372cfed9.jpg?format=webp" },
+      { id: 16, title: "Tablet", price: 13399, category: "electronics", image: "https://media-ik.croma.com/prod/https://media.croma.com/image/upload/v1669031397/Croma%20Assets/Computers%20Peripherals/Tablets%20and%20iPads/Images/265565_ituyae.png" },
+      { id: 17, title: "Hoodie", price: 999, category: "clothing", image: "https://www.davidgandywellwear.com/cdn/shop/products/Ultimate-Loopback-Hoodie-Black.jpg?v=1677258480&width=1946" },
+      { id: 18, title: "Science Book", price: 2699, category: "books", image: "https://m.media-amazon.com/images/I/71lDUGfRa8L._UF1000,1000_QL80_.jpg" },
+      { id: 19, title: "Wall Clock", price: 1199, category: "home", image: "https://rukminim2.flixcart.com/image/704/844/l4n2oi80/wall-clock/0/k/m/sk-multistoreworld-analog-31-cm-x-31-cm-wall-clock-taitanic-best-original-imagfht2bcxxjnyw.jpeg?q=90&crop=false" },
+      { id: 20, title: "Tennis Racket", price: 1129, category: "sports", image: "https://www.khelmart.com/pub/media/catalog/product/cache/712b931dac1b924a11d1b7282ad89910/1/_/1_274.jpg" },
+      { id: 21, title: "Android Phones", price:24999, category:"electronics", image:"https://image.made-in-china.com/2f0j00rasepPtlOCqI/New-X500-6-5-Inch-IPS-3GB-RAM-32GB-Unlocked-4G-Cellular-Android-WiFi-Smartphone.webp"},
+      { id: 22, title: "Laptop", price:52999, category:"electronics", image:"https://www.designinfo.in/wp-content/uploads/2023/10/HP-Laptop-15s-11th-Gen-Intel-Core-i5-1155G7-1.webp"},
+      { id: 23, title: "Computer", price:124999, category:"electronics", image:"https://m.media-amazon.com/images/I/71QtoB1MJIL._UF1000,1000_QL80_.jpg"},
+      { id: 24, title: "Smart TV", price:224999, category:"electronics", image:"https://m.media-amazon.com/images/I/71JQ3kUrR9L._UF1000,1000_QL80_.jpg"},
+      { id: 25, title: "AC", price:24999, category:"electronics", image:"https://assets.nikshanonline.com/wp-content/uploads/2024/12/Haier-1.5-Ton-3-Star-Clean-Cool-Triple-Inverter-Split-AC3.png"},
+      { id: 26, title: "Saree", price:5999, category:"clothing", image:"https://images.jdmagicbox.com/quickquotes/images_main/semi-soft-silk-pattu-saree-pattu-border-saree-2-378530579-jvodt.jpg"},
+      { id: 27, title:"Top", price:699, category:"clothing", image:"https://womenfashionquotient.wordpress.com/wp-content/uploads/2015/01/stylish-kurtis-online.jpg"},
+      { id: 28, title:"Legin", price:799, category:"clothing",image:"https://rukminim2.flixcart.com/image/850/1000/xif0q/kids-legging/b/l/1/10-11-years-kids-legging-5pcs-combo-10-11yrs-36-my-original-imag42gxukzgffgr-bb.jpeg?q=90&crop=false"},
+      { id: 29, title:"Shorts", price:399, category:"clothing",image:"https://m.media-amazon.com/images/I/61LKs361NjL.jpg"},
+      { id: 30, title:"Shirt", price:999, category:"clothing",image:"https://images.meesho.com/images/products/525041290/xlfzv_512.webp"},
+      { id: 31, title:"Accounting Books", price:1999, category:"books",image:"https://m.media-amazon.com/images/I/51Efz46NUML.jpg"},
+      { id: 32, title:"AI Books", price:499, category:"books",image:"https://technicalpublications.in/cdn/shop/products/9789355852571_1.jpg?v=1672226197"},
+      { id: 33, title:"TNSPC Books", price:1499, category:"books",image:"https://rukminim2.flixcart.com/image/850/1000/kqidx8w0/book/5/k/n/tnpsc-group-2-and-2a-ccse-ii-preliminary-all-in-one-exam-books-original-imag4g9zde7vpez2.jpeg?q=90&crop=false"},
+      { id: 34, title:"Love Story Books", price:149, category:"books",image:"https://www.adhyayanbooks.com/wp-content/uploads/2024/08/9389717434.jpg"},
+      { id: 35, title:"History Books", price:199, category:"books",image:"https://m.media-amazon.com/images/I/81KbDfM8IZL._UF1000,1000_QL80_.jpg"},
+      { id: 36, title:"Mathmatics Books", price:299, category:"books",image:"https://media.springernature.com/full/springer-static/cover-hires/book/978-3-031-11166-2"},
+      { id: 37, title:"Refrigator", price:77799, category:"home",image:"https://sharptronics.in/cdn/shop/products/71A-tOXZ4gL._AC_SL1500.jpg?v=1619690223"},
+      { id: 38, title:"Sofa", price:27999, category:"home",image:"https://pchomedecor.com/cdn/shop/files/IMG-20231124-WA0163.jpg?v=1700813742"},
+      { id: 39, title:"Table", price:1799, category:"home",image:"https://www.godrejinterio.com/imagestore/B2C/56101543SD00017/56101543SD00017_A2_1440x810.jpg"},
+      { id: 40, title:"Dining Table", price:7999, category:"home",image:"https://www.casafurnishing.in/wp-content/uploads/2022/11/round-dining-table-6-seater-1-1-1.jpg"},
+      { id: 41, title:"Cuttle", price:17799, category:"home",image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJOzdgXwcDWRznz5EDt47HVzFxQD4NK3WbUQ&s"},
+      { id: 42, title:"biraul", price:20799, category:"home",image:"https://rukminim2.flixcart.com/image/360/360/xif0q/cupboard-almirah/p/r/1/no-carbon-steel-900-66-slim00013f-pink-godrej-interio-1950-dusty-original-imah8a7tfmazhuqn.jpeg?q=90&crop=false"},
+      { id: 43, title:"Steel Rack", price:1799, category:"home",image:"https://4.imimg.com/data4/AV/HJ/ANDROID-8711075/product-500x500.jpeg"},
+      { id: 44, title:"Running Shoes", price:799, category:"sports",image:"https://framerusercontent.com/images/CI2XMYReYsA3P7eqtWQo2WfzV0o.jpg"},
+      { id: 45, title:"Cricket Ball", price:17799, category:"sports",image:"https://nwscdn.com/media/catalog/product/cache/h900xw900/c/r/cricket-club-ball-family_1.jpg"},
+      { id: 46, title:"Cricket Shoes", price:1999, category:"sports",image:"https://www.dsc-cricket.com/media/catalog/category/Rubber-Studes-Cricket-Shoes-Mobile-View_1.jpg"},
+      { id: 47, title:"Cricket Bag", price:1799, category:"sports",image:"https://www.sstoncricket.com/wp-content/uploads/2023/04/Colt-Army-2-scaled.jpg"},
+      { id: 48, title:"FootBall", price:799, category:"sports",image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWYf5IMmgVS0OFoTZfrZwDjIsf3orTinmOzw&s"},
+      { id: 49, title:"Volley Ball", price:799, category:"sports",image:"https://m.media-amazon.com/images/I/61pFab9tNeL.jpg"},
+      { id: 50, title:"Glows", price:1799, category:"sports",image:"https://sportsgoodsmarket.com/wp-content/uploads/2020/12/PRO-5-scaled.jpg"},
+      { id:51, title:"Chain", price:699, category:"Jewellers", image:"https://inoxjewelry.in/cdn/shop/files/inox-jewelry-accessories-18k-gold-ion-plated-stainless-steel-4mm-curb-chain-33131942117491.jpg?v=1713747862"},
+      { id:52, title:"Men's Bracelet", price:199, category:"Jewellers", image:"https://m.media-amazon.com/images/I/81e3mxxAnyL._SY695_.jpg"},
+      { id:53, title:"Women's Bracelet", price:699, category:"Jewellers", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-v9cLWH2Z4Gh-lRh4KBfPtW60prOlFbf1CA&s"},
+      { id:54, title:"Men's Ring", price:1699, category:"Jewellers", image:"https://cdn.shopify.com/s/files/1/2436/4429/products/AD-112-RG_RING_1_2048x.jpg?v=1693911076"},
+      { id:55, title:"Earings", price:699, category:"Jewellers", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZaPPdmrkK9eEpUDbAX8oNYtM0aSeRgfOMTg&s"},
+      { id:56, title:"Women's Ring", price:899, category:"Jewellers", image:"https://cdn.shopify.com/s/files/1/0607/4813/6588/files/IMG20240824125616.png?v=1725155601"},
+      { id:57, title:"Diamond Necklace", price:6699, category:"Jewellers", image:"https://www.orra.co.in/media/catalog/product/cache/8706a87b250cd4797f5bf599698c5c7a/o/s/osn19041_2_gpkemjdffhlflbgm.jpg"},
+      { id:58, title:"Gold Necklace", price:9999, category:"Jewellers", image:"https://www.chungathjewellery.com/media/catalog/product/cache/68d4aeb6f3ab656bf053a30e1b84b8a1/0/0/0000125990.png"},
+      { id:59, title:"Diamond Golusu", price:4699, category:"Jewellers", image:"https://www.darjewellery.com/product_image/s1200__aHR0cHM6Ly9tZWRpYS5kYXJqZXdlbGxlcnkuaW4vcHJvZHVjdF9pbWFnZXMvczEyMDBfXzE3MjczNDI4NTgxNTUuanBn"},
+      { id:60, title:"Gold Golusu", price:9699, category:"Jewellers", image:"https://aspfashionjewellery.com/cdn/shop/files/rn-image_picker_lib_temp_ed7109bf-f84c-4775-ac0f-749b8f1138c5.jpg?v=1706772979&width=1946"},
+
+    ];
+
+    let cart = [], wishlist = [], currentFilter = "all", currentSort = "default", currentAuthType = "login";
+
+    function renderProducts(filter = "all") {
+      currentFilter = filter;
+      let list = filter === "all" ? [...products] : products.filter(p => p.category === filter);
+      switch (currentSort) {
+        case "price-asc": list.sort((a, b) => a.price - b.price); break;
+        case "price-desc": list.sort((a, b) => b.price - a.price); break;
+        case "name-asc": list.sort((a, b) => a.title.localeCompare(b.title)); break;
+        case "name-desc": list.sort((a, b) => b.title.localeCompare(a.title)); break;
+      }
+      renderProductsList(list);
+    }
+
+    function renderProductsList(list) {
+      const container = document.getElementById("product-list");
+      container.innerHTML = "";
+      list.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <img src="${product.image}" alt="${product.title}">
+          <h3>${product.title}</h3>
+          <p>$${product.price}</p>
+          <p>Rating: ⭐⭐⭐⭐☆</p>
+          <button onclick="addToCart(${product.id})">Add to Cart</button>
+          <button onclick="addToWishlist(${product.id})">❤️ Wishlist</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addToCart(id) {
+      const item = products.find(p => p.id === id);
+      cart.push(item);
+      document.getElementById("cart-count").textContent = cart.length;
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartItems = document.getElementById("cart-items");
+      cartItems.innerHTML = "";
+      let total = 0;
+      cart.forEach((item, i) => {
+        total += item.price;
+        cartItems.innerHTML += `<div>${item.title} - $${item.price} <button onclick="removeFromCart(${i})">❌</button></div>`;
+      });
+      document.getElementById("cart-total").textContent = `Total: $${total}`;
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      document.getElementById("cart-count").textContent = cart.length;
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      document.getElementById("cart-count").textContent = 0;
+      renderCart();
+    }
+
+    function toggleCart() {
+      const modal = document.getElementById("cart-modal");
+      modal.style.display = modal.style.display === "block" ? "none" : "block";
+    }
+
+    function sortProducts(value) {
+      currentSort = value;
+      renderProducts(currentFilter);
+    }
+
+    function filterCategory(category) {
+      renderProducts(category);
+    }
+
+    function searchProducts() {
+      const query = document.getElementById("search-input").value.toLowerCase();
+      const filtered = products.filter(p => p.title.toLowerCase().includes(query));
+      renderProductsList(filtered);
+    }
+
+    function addToWishlist(id) {
+      const item = products.find(p => p.id === id);
+      if (!wishlist.find(p => p.id === id)) {
+        wishlist.push(item);
+        alert(item.title + " added to wishlist!");
+      } else {
+        alert("Already in wishlist!");
+      }
+    }
+
+    function checkout() {
+      if (cart.length === 0) return alert("Cart is empty.");
+      document.getElementById("payment-modal").style.display = "block";
+    }
+
+    function submitPayment() {
+      const name = document.getElementById("card-name").value.trim();
+      const number = document.getElementById("card-number").value.trim();
+      const expiry = document.getElementById("card-expiry").value.trim();
+      const cvv = document.getElementById("card-cvv").value.trim();
+      if (!name || !number || !expiry || !cvv || number.length !== 16) {
+        return alert("Invalid payment details.");
+      }
+      alert("💳 Payment successful! Thank you.");
+      clearCart();
+      document.getElementById("payment-modal").style.display = "none";
+    }
+
+    function showAuthForm(type) {
+      currentAuthType = type;
+      document.getElementById("auth-title").textContent = type === "login" ? "Login" : "Register";
+      document.getElementById("toggle-auth").textContent = type === "login" ? "Don't have an account? Register" : "Already have an account? Login";
+      document.getElementById("auth-modal").style.display = "block";
+    }
+
+    function toggleAuth() {
+      showAuthForm(currentAuthType === "login" ? "register" : "login");
+    }
+
+    function submitAuth() {
+      const user = document.getElementById("auth-username").value;
+      const pass = document.getElementById("auth-password").value;
+      if (!user || !pass) return alert("Enter username and password.");
+      alert(`${currentAuthType === "login" ? "Logged in" : "Registered"} as ${user}`);
+      document.getElementById("auth-modal").style.display = "none";
+    }
+
+    renderProducts();
+  </script>
+</body>
+</html>
